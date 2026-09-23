@@ -20,13 +20,21 @@ class Settings(BaseSettings):
     """Global configuration settings for the PDF Knowledge Assistant."""
 
     # LLM Settings
-    llm_provider: Literal["gemini", "openrouter"] = Field(
-        default="gemini",
-        description="Active LLM provider backend ('gemini' or 'openrouter')"
+    llm_provider: Literal["auto", "gemini", "nvidia", "openrouter", "mock"] = Field(
+        default="auto",
+        description="Active LLM provider backend ('auto', 'gemini', 'nvidia', 'openrouter', or 'mock')"
     )
     gemini_api_key: str = Field(
         default="",
         description="Google Gemini API key (https://aistudio.google.com/app/apikey)"
+    )
+    nvidia_api_key: str = Field(
+        default="",
+        description="NVIDIA NIM API key (https://build.nvidia.com)"
+    )
+    nvidia_model: str = Field(
+        default="meta/llama-3.2-11b-vision-instruct",
+        description="Model name to use with NVIDIA NIM"
     )
     openrouter_api_key: str = Field(
         default="",

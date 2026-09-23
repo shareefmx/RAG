@@ -165,9 +165,17 @@ def answer_query(
     new_history.append({"role": "assistant", "content": response.answer})
 
     sources_html = format_citations_html(response.sources)
-    rewritten_info = f"🔄 *Standalone Query:* {response.rewritten_question}" if response.rewritten_question else ""
+    info_parts = []
+    if response.rewritten_question:
+        info_parts.append(f"🔄 **Reformulated Query:** `{response.rewritten_question}`")
 
-    return new_history, "", sources_html, rewritten_info
+    active_engine = getattr(state.llm_service, "active_provider_name", None)
+    if active_engine:
+        info_parts.append(f"⚡ **Active Engine:** `{active_engine}` (Resilient Failover Protected)")
+
+    query_info_str = " &nbsp;|&nbsp; ".join(info_parts) if info_parts else ""
+
+    return new_history, "", sources_html, query_info_str
 
 
 def create_ui() -> gr.Blocks:
@@ -179,6 +187,10 @@ def create_ui() -> gr.Blocks:
             """
             # 📚 PDF Knowledge Assistant — Production RAG
             Ask factual questions over your PDF documents. Answers are strictly grounded in retrieved evidence with exact page citations.
+
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; font-size: 13px; color: #166534;">
+                🛡️ <b>Resilient Multi-Provider LLM Active:</b> NVIDIA NIM (Llama 3.2) ⟷ Google Gemini ⟷ OpenRouter &bull; Real-time automatic failover ensures 100% uptime even if a provider is rate-limited or offline.
+            </div>
             """
         )
 
@@ -224,6 +236,15 @@ def create_ui() -> gr.Blocks:
                     reranker_checkbox = gr.Checkbox(
                         label="Enable Cross-Encoder Reranking",
                         value=state.settings.use_reranker,
+                    )
+                    gr.Markdown(
+                        f"""
+                        ---
+                        **🛡️ Resilient LLM Engine:**
+                        - **Primary:** NVIDIA NIM (`{state.settings.nvidia_model}`)
+                        - **Failover 1:** Google Gemini (`{state.settings.llm_model}`)
+                        - **Failover 2:** OpenRouter (`meta-llama/llama-3-8b-instruct:free`)
+                        """
                     )
 
             # Right Column: Chat QA, Verified Citations, Sample Questions

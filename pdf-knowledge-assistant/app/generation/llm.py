@@ -7,7 +7,7 @@ Supports Google Gemini API, OpenRouter (OpenAI-compatible), and a deterministic 
 from abc import ABC, abstractmethod
 import logging
 import os
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +176,111 @@ class OpenRouterLLMService(BaseLLMService):
             raise LLMError(f"OpenRouter service temporarily unavailable: {e}") from e
 
 
+class NvidiaLLMService(BaseLLMService):
+    """NVIDIA NIM API implementation using OpenAI-compatible client."""
+
+    NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+    DEFAULT_MODELS = [
+        "meta/llama-3.2-11b-vision-instruct",
+        "mistralai/mistral-large-2-instruct",
+        "deepseek-ai/deepseek-v4.1-flash",
+    ]
+
+    def __init__(self, api_key: str, model_name: Optional[str] = None):
+        if not api_key:
+            raise ValueError(
+                "NVIDIA API key is required. Please set NVIDIA_API_KEY in your .env file or environment."
+            )
+        self.api_key = api_key
+        self.model_name = model_name or self.DEFAULT_MODELS[0]
+        self._client = None
+
+    @property
+    def client(self):
+        if self._client is None:
+            try:
+                from openai import OpenAI
+                self._client = OpenAI(
+                    base_url=self.NVIDIA_BASE_URL,
+                    api_key=self.api_key,
+                )
+            except Exception as e:
+                logger.error("Failed to initialize OpenAI/NVIDIA NIM client: %s", e)
+                raise LLMError(f"Could not initialize NVIDIA NIM client: {e}") from e
+        return self._client
+
+    def generate(
+        self,
+        prompt: str,
+        system_instruction: Optional[str] = None,
+        temperature: float = 0.0,
+        max_tokens: int = 1024,
+    ) -> str:
+        logger.info("Sending generation request to NVIDIA NIM model '%s'", self.model_name)
+        try:
+            messages = []
+            if system_instruction:
+                messages.append({"role": "system", "content": system_instruction})
+            messages.append({"role": "user", "content": prompt})
+
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
+
+            choice = response.choices[0]
+            content = choice.message.content or ""
+            return content.strip()
+
+        except Exception as e:
+            logger.error("NVIDIA NIM generation failed: %s", e)
+            raise LLMError(f"NVIDIA NIM service temporarily unavailable: {e}") from e
+
+
+class MultiProviderResilientLLMService(BaseLLMService):
+    """Orchestrates resilient multi-provider LLM failover.
+
+    If the primary provider fails (rate limits, service outage, network error),
+    it automatically routes the query to the next configured provider in real-time.
+    """
+
+    def __init__(self, providers: List[Tuple[str, BaseLLMService]]):
+        self.providers = providers
+        self.active_provider_name = providers[0][0] if providers else "none"
+
+    def generate(
+        self,
+        prompt: str,
+        system_instruction: Optional[str] = None,
+        temperature: float = 0.0,
+        max_tokens: int = 1024,
+    ) -> str:
+        last_error = None
+        for name, service in self.providers:
+            try:
+                logger.info("Attempting generation with provider: '%s'", name)
+                result = service.generate(
+                    prompt=prompt,
+                    system_instruction=system_instruction,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+                if result and result.strip():
+                    if self.active_provider_name != name:
+                        logger.info("[Auto-Failover] Switched active provider to '%s'", name)
+                    self.active_provider_name = name
+                    return result
+            except Exception as e:
+                logger.warning("[Auto-Failover] Provider '%s' unavailable (%s). Switching to alternative...", name, e)
+                last_error = e
+                continue
+
+        logger.error("All providers in failover chain exhausted: %s", last_error)
+        raise LLMError(f"All LLM providers in resilient failover chain failed: {last_error}") from last_error
+
+
 class MockLLMService(BaseLLMService):
     """Deterministic mock LLM for testing, evaluation benchmarks, and offline environments."""
 
@@ -199,33 +304,59 @@ class LLMServiceFactory:
 
     @staticmethod
     def create(
-        provider: str = "gemini",
+        provider: str = "auto",
         gemini_api_key: str = "",
+        nvidia_api_key: str = "",
         openrouter_api_key: str = "",
         model_name: Optional[str] = None,
+        nvidia_model: Optional[str] = None,
     ) -> BaseLLMService:
         provider = provider.lower().strip()
 
-        if provider == "gemini":
-            key = gemini_api_key or os.getenv("GEMINI_API_KEY", "")
-            if not key:
+        # Gather keys
+        g_key = gemini_api_key or os.getenv("GEMINI_API_KEY", "")
+        nv_key = nvidia_api_key or os.getenv("NVIDIA_API_KEY", "")
+        or_key = openrouter_api_key or os.getenv("OPENROUTER_API_KEY", "")
+
+        nv_model_name = nvidia_model or os.getenv("NVIDIA_MODEL", "meta/llama-3.2-11b-vision-instruct")
+
+        if provider == "auto":
+            chain: List[Tuple[str, BaseLLMService]] = []
+            if nv_key:
+                chain.append(("NVIDIA NIM", NvidiaLLMService(api_key=nv_key, model_name=nv_model_name)))
+            if g_key:
+                chain.append(("Google Gemini", GeminiLLMService(api_key=g_key, model_name=model_name or "gemini-3.5-flash-lite")))
+            if or_key:
+                chain.append(("OpenRouter", OpenRouterLLMService(api_key=or_key, model_name="meta-llama/llama-3-8b-instruct:free")))
+
+            if not chain:
+                logger.warning("No LLM API keys configured. Falling back to MockLLMService.")
+                return MockLLMService()
+
+            return MultiProviderResilientLLMService(providers=chain)
+
+        elif provider == "gemini":
+            if not g_key:
                 logger.warning("No GEMINI_API_KEY found. Falling back to MockLLMService.")
                 return MockLLMService()
-            return GeminiLLMService(api_key=key, model_name=model_name or "gemini-2.5-flash")
+            return GeminiLLMService(api_key=g_key, model_name=model_name or "gemini-3.5-flash-lite")
+
+        elif provider == "nvidia":
+            if not nv_key:
+                logger.warning("No NVIDIA_API_KEY found. Falling back to MockLLMService.")
+                return MockLLMService()
+            return NvidiaLLMService(api_key=nv_key, model_name=nv_model_name)
 
         elif provider == "openrouter":
-            key = openrouter_api_key or os.getenv("OPENROUTER_API_KEY", "")
-            if not key:
+            if not or_key:
                 logger.warning("No OPENROUTER_API_KEY found. Falling back to MockLLMService.")
                 return MockLLMService()
-            return OpenRouterLLMService(
-                api_key=key,
-                model_name=model_name or "meta-llama/llama-3-8b-instruct:free"
-            )
+            return OpenRouterLLMService(api_key=or_key, model_name=model_name or "meta-llama/llama-3-8b-instruct:free")
 
         elif provider == "mock":
             return MockLLMService()
 
         else:
-            raise ValueError(f"Unsupported LLM provider: '{provider}'. Supported: 'gemini', 'openrouter', 'mock'.")
+            raise ValueError(f"Unsupported LLM provider: '{provider}'. Supported: 'auto', 'gemini', 'nvidia', 'openrouter', 'mock'.")
+
 

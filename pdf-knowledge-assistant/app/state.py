@@ -56,8 +56,10 @@ class AppState:
         self.llm_service = LLMServiceFactory.create(
             provider=self.settings.llm_provider,
             gemini_api_key=self.settings.gemini_api_key,
+            nvidia_api_key=self.settings.nvidia_api_key,
             openrouter_api_key=self.settings.openrouter_api_key,
             model_name=self.settings.llm_model,
+            nvidia_model=self.settings.nvidia_model,
         )
 
         # 5. Optional Reranker
