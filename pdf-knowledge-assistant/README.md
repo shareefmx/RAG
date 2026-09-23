@@ -12,9 +12,14 @@ short_description: Production RAG with PyMuPDF, FAISS, Gemini & Gradio
 
 # 📚 PDF Knowledge Assistant — Production RAG Project
 
+[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces%20Live%20Demo-blue?style=for-the-badge)](https://huggingface.co/spaces/shareefmx/pdf-knowledge-assistant)
+[![Live Web App](https://img.shields.io/badge/Web%20App-Direct%20Interface-success?style=for-the-badge)](https://shareefmx-pdf-knowledge-assistant.hf.space/)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?style=for-the-badge&logo=github)](https://github.com/shareefmx/RAG)
+
 A production-grade **Retrieval-Augmented Generation (RAG)** application designed to ingest, clean, chunk, embed, index, and query PDF documents with zero external document leakage, strict anti-hallucination guardrails, and verified source citations down to exact page numbers and similarity scores.
 
-Built with **PyMuPDF**, **Sentence Transformers**, **FAISS / Chroma**, **Google Gemini / OpenRouter**, **FastAPI**, and **Gradio**.
+Built with **PyMuPDF**, **Sentence Transformers**, **Okapi BM25**, **FAISS / Chroma**, **Google Gemini / OpenRouter**, **FastAPI**, and **Gradio**.
+
 
 ---
 
