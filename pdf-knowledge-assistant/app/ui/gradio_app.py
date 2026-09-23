@@ -165,17 +165,9 @@ def answer_query(
     new_history.append({"role": "assistant", "content": response.answer})
 
     sources_html = format_citations_html(response.sources)
-    info_parts = []
-    if response.rewritten_question:
-        info_parts.append(f"🔄 **Reformulated Query:** `{response.rewritten_question}`")
+    rewritten_info = f"🔄 *Standalone Query:* {response.rewritten_question}" if response.rewritten_question else ""
 
-    active_engine = getattr(state.llm_service, "active_provider_name", None)
-    if active_engine:
-        info_parts.append(f"⚡ **Active Engine:** `{active_engine}` (Resilient Failover Protected)")
-
-    query_info_str = " &nbsp;|&nbsp; ".join(info_parts) if info_parts else ""
-
-    return new_history, "", sources_html, query_info_str
+    return new_history, "", sources_html, rewritten_info
 
 
 def create_ui() -> gr.Blocks:
@@ -187,10 +179,6 @@ def create_ui() -> gr.Blocks:
             """
             # 📚 PDF Knowledge Assistant — Production RAG
             Ask factual questions over your PDF documents. Answers are strictly grounded in retrieved evidence with exact page citations.
-
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; font-size: 13px; color: #166534;">
-                🛡️ <b>Resilient Multi-Provider LLM Active:</b> NVIDIA NIM (Llama 3.2) ⟷ Google Gemini ⟷ OpenRouter &bull; Real-time automatic failover ensures 100% uptime even if a provider is rate-limited or offline.
-            </div>
             """
         )
 
@@ -237,15 +225,6 @@ def create_ui() -> gr.Blocks:
                         label="Enable Cross-Encoder Reranking",
                         value=state.settings.use_reranker,
                     )
-                    gr.Markdown(
-                        f"""
-                        ---
-                        **🛡️ Resilient LLM Engine:**
-                        - **Primary:** NVIDIA NIM (`{state.settings.nvidia_model}`)
-                        - **Failover 1:** Google Gemini (`{state.settings.llm_model}`)
-                        - **Failover 2:** OpenRouter (`meta-llama/llama-3-8b-instruct:free`)
-                        """
-                    )
 
             # Right Column: Chat QA, Verified Citations, Sample Questions
             with gr.Column(scale=6):
@@ -266,11 +245,12 @@ def create_ui() -> gr.Blocks:
                     ask_btn = gr.Button("Ask", variant="primary", scale=1)
 
                 with gr.Accordion("💡 Example Inquiries", open=True):
-                    example_1 = gr.Button("👤 Who is this person and what is their background?")
-                    example_2 = gr.Button("🛠️ What are their key technical skills and tools?")
-                    example_3 = gr.Button("💼 What work experience and projects are listed?")
-                    example_4 = gr.Button("🎓 What education and certifications do they have?")
-                    example_5 = gr.Button("🌐 What is the population of Tokyo? (Test Out-of-Domain Rejection)")
+                    example_1 = gr.Button("📄 What is the main summary and core objective of this document?")
+                    example_2 = gr.Button("🔑 What are the key findings and main takeaways?")
+                    example_3 = gr.Button("⚙️ What methodologies, tools, or processes are discussed?")
+                    example_4 = gr.Button("📊 What important facts, data, or metrics are highlighted?")
+                    example_5 = gr.Button("🔍 What challenges, limitations, or risks are identified?")
+                    example_6 = gr.Button("📌 What recommendations or next steps are proposed?")
 
                 clear_btn = gr.Button("🧹 Clear Conversation", size="sm")
 
@@ -306,11 +286,12 @@ def create_ui() -> gr.Blocks:
 
         # Example click handlers with auto-submit
         for btn, text in [
-            (example_1, "Who is this person and what is their professional background?"),
-            (example_2, "What are the primary technical skills, tools, and platforms?"),
-            (example_3, "What work experience and projects are detailed in this document?"),
-            (example_4, "What education, degrees, and certifications are listed?"),
-            (example_5, "What is the population of Tokyo?"),
+            (example_1, "What is the main summary and core objective of this document?"),
+            (example_2, "What are the key findings and main takeaways?"),
+            (example_3, "What methodologies, tools, or processes are discussed in this document?"),
+            (example_4, "What important facts, data, or metrics are highlighted in this document?"),
+            (example_5, "What challenges, limitations, or risks are identified in this document?"),
+            (example_6, "What recommendations, solutions, or next steps are proposed?"),
         ]:
             btn.click(
                 lambda t=text: t,
