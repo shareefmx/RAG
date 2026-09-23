@@ -42,7 +42,14 @@ def deploy(token: str, space_name: str, private: bool = False):
         )
         print("Space repository initialized on Hugging Face.")
     except Exception as e:
-        print(f"Note on repo creation: {e}")
+        if "402" in str(e):
+            print("\n⚠️ Note: Automated Space creation via API returned 402.")
+            print("Please create the Space once manually on the web: https://huggingface.co/new-space")
+            print("  - Space name: " + space_name)
+            print("  - Space SDK: Gradio")
+            print("Once created, this script will upload all code files directly.\n")
+        else:
+            print(f"Note on repo creation: {e}")
 
     # 2. Upload application files (ignoring local data and environments)
     print("Uploading application files to Hugging Face Space...")
