@@ -177,3 +177,26 @@ class ChromaVectorStore(BaseVectorStore):
             metadata={"hnsw:space": "cosine"},
         )
 
+    def get_all_chunks(self) -> List[DocumentChunk]:
+        """Returns all DocumentChunk objects currently stored in Chroma."""
+        all_data = self.collection.get(include=["documents", "metadatas"])
+        chunks: List[DocumentChunk] = []
+        ids = all_data.get("ids", [])
+        docs = all_data.get("documents", [])
+        metas = all_data.get("metadatas", [])
+
+        for chunk_id, text, meta in zip(ids, docs, metas):
+            chunks.append(
+                DocumentChunk(
+                    chunk_id=chunk_id,
+                    document_id=meta.get("document_id", ""),
+                    filename=meta.get("filename", ""),
+                    page=meta.get("page", 1),
+                    section=meta.get("section", "General"),
+                    chunk_index=meta.get("chunk_index", 0),
+                    text=text,
+                    metadata=meta,
+                )
+            )
+        return chunks
+

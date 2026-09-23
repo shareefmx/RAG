@@ -76,3 +76,40 @@ def test_retriever_empty_query(populated_retriever):
     assert result.has_sufficient_context is False
     assert len(result.chunks) == 0
 
+
+def test_bm25_lexical_search():
+    from app.retrieval.bm25 import BM25Index
+
+    index = BM25Index()
+    chunks = [
+        DocumentChunk(
+            chunk_id="c1",
+            document_id="doc1",
+            filename="doc1.pdf",
+            page=1,
+            section="Sec1",
+            chunk_index=1,
+            text="Muhammed Shareef is an AI/ML Engineer with expertise in React and Python.",
+        ),
+        DocumentChunk(
+            chunk_id="c2",
+            document_id="doc1",
+            filename="doc1.pdf",
+            page=2,
+            section="Sec2",
+            chunk_index=2,
+            text="He completed his education at New Horizon College of Engineering.",
+        ),
+    ]
+    index.index_chunks(chunks)
+
+    # Keyword match for education / college
+    matches = index.search("New Horizon College education", k=2)
+    assert len(matches) >= 1
+    assert matches[0].chunk.chunk_id == "c2"
+
+    # Stopwords should not cause false positive matches
+    unrelated = index.search("what is the dough pizza", k=2)
+    assert len(unrelated) == 0
+
+

@@ -50,7 +50,15 @@ class TextCleaner:
         if self.fix_hyphenation:
             text = re.sub(r"([a-zA-Z]{2,})-\n([a-zA-Z]{2,})", r"\1\2", text)
 
-        # 5. Normalize horizontal whitespace within lines (tabs/multiple spaces -> single space)
+        # 5. Fix fused words commonly produced by PDF extraction bounding box joins
+        # e.g., ALLCAPS followed by TitleCase: "EDUCATIONNew" -> "EDUCATION New"
+        text = re.sub(r"\b([A-Z]{2,})([A-Z][a-z])", r"\1 \2", text)
+        # e.g., Numbers followed by Capitalized word: "2024SKILLS" -> "2024 SKILLS", "10.0SKILLS" -> "10.0 SKILLS"
+        text = re.sub(r"(\d+(?:\.\d+)?)([A-Z][a-z]+)", r"\1 \2", text)
+        # e.g., lowercase followed by ALLCAPS heading: "DeveloperSUMMARY" -> "Developer SUMMARY"
+        text = re.sub(r"([a-z])([A-Z]{2,}\b)", r"\1 \2", text)
+
+        # 6. Normalize horizontal whitespace within lines (tabs/multiple spaces -> single space)
         lines = text.split("\n")
         cleaned_lines = []
         for line in lines:
@@ -60,9 +68,9 @@ class TextCleaner:
 
         text = "\n".join(cleaned_lines)
 
-        # 6. Normalize paragraph breaks (collapse 3+ consecutive newlines into 2)
+        # 7. Normalize paragraph breaks (collapse 3+ consecutive newlines into 2)
         text = re.sub(r"\n{3,}", "\n\n", text)
 
-        # 7. Strip extraneous leading and trailing whitespace
+        # 8. Strip extraneous leading and trailing whitespace
         return text.strip()
 

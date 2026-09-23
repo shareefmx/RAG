@@ -217,8 +217,9 @@ def create_ui() -> gr.Blocks:
                         minimum=0.0,
                         maximum=1.0,
                         value=state.settings.similarity_threshold,
-                        step=0.05,
-                        label="Cosine Similarity Threshold",
+                        step=0.01,
+                        label="Relevance Sensitivity Threshold (Out-of-Domain Filter)",
+                        info="Default 0.05 prevents false refusals. Higher values strictly reject low-confidence chunks.",
                     )
                     reranker_checkbox = gr.Checkbox(
                         label="Enable Cross-Encoder Reranking",

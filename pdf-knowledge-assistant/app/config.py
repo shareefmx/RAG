@@ -33,7 +33,7 @@ class Settings(BaseSettings):
         description="OpenRouter API key (https://openrouter.ai/keys)"
     )
     llm_model: str = Field(
-        default="gemini-2.5-flash",
+        default="gemini-3.5-flash-lite",
         description="Model name to use with the selected provider"
     )
 
@@ -77,10 +77,10 @@ class Settings(BaseSettings):
         description="Number of candidate chunks retrieved before reranking"
     )
     similarity_threshold: float = Field(
-        default=0.15,
+        default=0.05,
         ge=0.0,
         le=1.0,
-        description="Minimum cosine similarity score required for relevant chunk acceptance"
+        description="Minimum score threshold required for out-of-domain rejection gating"
     )
 
     # Advanced Retrieval: Reranker

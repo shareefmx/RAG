@@ -213,3 +213,8 @@ class FAISSVectorStore(BaseVectorStore):
             self.dimension = loaded_index.d
             logger.info("Loaded FAISS index (%d chunks) from '%s'", len(self._chunks), directory)
 
+    def get_all_chunks(self) -> List[DocumentChunk]:
+        """Returns all DocumentChunk objects currently indexed in the store."""
+        with self._lock:
+            return list(self._chunks)
+

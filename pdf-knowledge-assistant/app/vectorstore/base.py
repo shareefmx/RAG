@@ -85,3 +85,7 @@ class BaseVectorStore(ABC):
         """Loads a persisted vector index and metadata from disk."""
         pass
 
+    def get_all_chunks(self) -> List[DocumentChunk]:
+        """Returns all DocumentChunk objects currently indexed in the store."""
+        return []
+
