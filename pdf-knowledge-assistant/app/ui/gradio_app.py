@@ -34,6 +34,12 @@ except Exception:
 logger = logging.getLogger(__name__)
 
 
+@spaces.GPU(duration=10)
+def _gpu_worker_init() -> bool:
+    """Registered @spaces.GPU function to satisfy Hugging Face ZeroGPU startup validator."""
+    return True
+
+
 def format_citations_html(citations) -> str:
     """Renders source citations as formatted HTML cards in a sleek, high-contrast dark black-and-white theme."""
     if not citations:
