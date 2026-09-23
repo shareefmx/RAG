@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets
+.env
+*.env.local
+*.env.*.local
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Local Data and Uploads (Never commit uploaded docs or generated vector indexes)
+pdf-knowledge-assistant/data/uploads/*
+!pdf-knowledge-assistant/data/uploads/.gitkeep
+pdf-knowledge-assistant/data/processed/*
+!pdf-knowledge-assistant/data/processed/.gitkeep
+pdf-knowledge-assistant/data/vectorstore/*
+!pdf-knowledge-assistant/data/vectorstore/.gitkeep
+*.faiss
+*.pkl
+
+# Hugging Face cache
+.cache/
+huggingface/
+
