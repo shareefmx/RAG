@@ -17,6 +17,19 @@ import gradio as gr
 
 from app.state import get_app_state
 
+try:
+    import spaces
+except Exception:
+    class _MockSpaces:
+        @staticmethod
+        def GPU(fn=None, **kwargs):
+            if callable(fn):
+                return fn
+            def wrapper(f):
+                return f
+            return wrapper
+    spaces = _MockSpaces()
+
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +94,7 @@ def get_doc_dropdown_choices() -> List[Tuple[str, str]]:
     return choices
 
 
+@spaces.GPU(duration=120)
 def index_files(files) -> Tuple[str, str, Any]:
     """Handles multi-file PDF upload and ingestion."""
     if not files:
@@ -120,6 +134,7 @@ def delete_selected_document(doc_id: str) -> Tuple[str, str, Any]:
     return status_msg, doc_markdown, gr.update(choices=new_choices, value="ALL")
 
 
+@spaces.GPU(duration=120)
 def answer_query(
     question: str,
     doc_filter: str,

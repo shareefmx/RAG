@@ -3,6 +3,11 @@
 Launches the PDF Knowledge Assistant Gradio interface.
 """
 
+try:
+    import spaces
+except Exception:
+    pass
+
 from app.config import get_settings, setup_logging
 from app.ui.gradio_app import create_ui
 
