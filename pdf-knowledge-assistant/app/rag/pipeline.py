@@ -94,6 +94,16 @@ class RAGPipeline:
 
         if hasattr(self.retriever, "vector_store") and hasattr(self.retriever.vector_store, "total_chunks"):
             if self.retriever.vector_store.total_chunks() == 0:
+                try:
+                    from app.config import get_settings
+                    store_dir = get_settings().get_vectorstore_path()
+                    if (store_dir / "index.faiss").exists() and (store_dir / "metadata.json").exists():
+                        self.retriever.vector_store.load(store_dir)
+                        logger.info("Auto-restored FAISS index from disk (%d chunks)", self.retriever.vector_store.total_chunks())
+                except Exception as e:
+                    logger.warning("Could not auto-restore vector store: %s", e)
+
+            if self.retriever.vector_store.total_chunks() == 0:
                 logger.info("RAG Query aborted: vector store is empty.")
                 return RAGResponse(
                     question=question,

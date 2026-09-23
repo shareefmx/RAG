@@ -137,6 +137,18 @@ class AppState:
             "total_indexed_chunks": self.vector_store.total_chunks(),
         }
 
+    def reload_vector_store_if_needed(self) -> None:
+        """Reloads FAISS vector store from disk if persisted files exist and in-memory is empty."""
+        store_dir = self.settings.get_vectorstore_path()
+        index_file = store_dir / "index.faiss"
+        meta_file = store_dir / "metadata.json"
+        if index_file.exists() and meta_file.exists():
+            try:
+                self.vector_store.load(store_dir)
+                logger.info("Synchronized FAISS index from disk (%d chunks)", self.vector_store.total_chunks())
+            except Exception as e:
+                logger.warning("Could not sync FAISS index from disk: %s", e)
+
 
 # Global app state singleton
 _APP_STATE: Optional[AppState] = None

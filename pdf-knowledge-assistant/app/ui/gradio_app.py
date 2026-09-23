@@ -73,6 +73,7 @@ def format_citations_html(citations) -> str:
 def get_indexed_docs_markdown() -> str:
     """Generates a summary markdown list of all currently indexed documents."""
     state = get_app_state()
+    state.reload_vector_store_if_needed()
     docs = state.vector_store.list_documents()
     if not docs:
         return "ℹ️ *No documents indexed yet. Upload one or more PDFs above to get started.*"
@@ -90,6 +91,7 @@ def get_indexed_docs_markdown() -> str:
 def get_doc_dropdown_choices() -> List[Tuple[str, str]]:
     """Returns dropdown choices formatted as (Display Name, document_id)."""
     state = get_app_state()
+    state.reload_vector_store_if_needed()
     docs = state.vector_store.list_documents()
     choices = [("All Documents (Global Search)", "ALL")]
     for d in docs:
@@ -97,7 +99,6 @@ def get_doc_dropdown_choices() -> List[Tuple[str, str]]:
     return choices
 
 
-@spaces.GPU(duration=120)
 def index_files(files) -> Tuple[str, str, Any]:
     """Handles multi-file PDF upload and ingestion."""
     if not files:
@@ -137,7 +138,6 @@ def delete_selected_document(doc_id: str) -> Tuple[str, str, Any]:
     return status_msg, doc_markdown, gr.update(choices=new_choices, value="ALL")
 
 
-@spaces.GPU(duration=120)
 def answer_query(
     question: str,
     doc_filter: str,
@@ -152,6 +152,7 @@ def answer_query(
         return history, "", "", ""
 
     state = get_app_state()
+    state.reload_vector_store_if_needed()
     selected_doc_id = None if (not doc_filter or doc_filter == "ALL") else doc_filter
 
     response = state.pipeline.answer_question(
