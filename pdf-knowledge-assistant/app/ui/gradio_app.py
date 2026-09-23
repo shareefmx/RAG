@@ -35,30 +35,33 @@ logger = logging.getLogger(__name__)
 
 
 def format_citations_html(citations) -> str:
-    """Renders source citations as formatted HTML cards with score badges and expandable excerpts."""
+    """Renders source citations as formatted HTML cards in a sleek, high-contrast dark black-and-white theme."""
     if not citations:
-        return "<p style='color: #888;'>No sources cited for this query.</p>"
+        return """
+        <div style="background-color: #0d0d0e; border: 1px solid #27272a; border-radius: 8px; padding: 14px; color: #a1a1aa; font-size: 13px;">
+            No sources cited for this query.
+        </div>
+        """
 
     html_blocks = []
     for i, c in enumerate(citations, 1):
         score_percent = int(c.score * 100) if 0.0 <= c.score <= 1.0 else f"{c.score:.2f}"
-        badge_color = "#28a745" if (isinstance(score_percent, int) and score_percent >= 60) else "#007bff"
         snippet_escaped = html.escape(c.snippet)
 
         block = f"""
-        <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 10px; background-color: #fafafa;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <span style="font-weight: bold; font-size: 14px;">📄 {html.escape(c.filename)} &mdash; Page {c.page}</span>
-                <span style="background-color: {badge_color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
-                    Similarity: {score_percent}%
+        <div style="border: 1px solid #27272a; border-radius: 8px; padding: 14px; margin-bottom: 12px; background-color: #0d0d0e; color: #ffffff;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #27272a; padding-bottom: 8px;">
+                <span style="font-weight: 700; font-size: 14px; color: #ffffff;">📄 {html.escape(c.filename)} &mdash; Page {c.page}</span>
+                <span style="background-color: #000000; border: 1px solid #ffffff; color: #ffffff; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; font-family: monospace;">
+                    Match: {score_percent}%
                 </span>
             </div>
-            <div style="font-size: 12px; color: #555; margin-bottom: 6px;">
-                <strong>Section:</strong> {html.escape(c.section)} &nbsp;|&nbsp; <strong>Chunk ID:</strong> <code>{html.escape(c.chunk_id)}</code>
+            <div style="font-size: 12px; color: #a1a1aa; margin-bottom: 8px;">
+                <strong style="color: #d4d4d8;">Section:</strong> <span style="color: #ffffff;">{html.escape(c.section)}</span> &nbsp;|&nbsp; <strong style="color: #d4d4d8;">Chunk ID:</strong> <code style="background-color: #1f1f23; border: 1px solid #3f3f46; color: #ffffff; padding: 1px 6px; border-radius: 4px; font-size: 11px;">{html.escape(c.chunk_id)}</code>
             </div>
-            <details style="margin-top: 6px;">
-                <summary style="cursor: pointer; color: #0366d6; font-size: 13px;">View Matching Excerpt</summary>
-                <div style="background-color: #f1f1f1; border-left: 3px solid #0366d6; padding: 8px; margin-top: 6px; font-size: 13px; white-space: pre-wrap; font-family: monospace;">{snippet_escaped}</div>
+            <details style="margin-top: 8px;">
+                <summary style="cursor: pointer; color: #ffffff; font-size: 12px; font-weight: 600; text-decoration: underline; outline: none;">View Matching Excerpt</summary>
+                <div style="background-color: #000000; border-left: 3px solid #ffffff; border: 1px solid #27272a; padding: 10px; margin-top: 8px; font-size: 12px; color: #f4f4f5; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; line-height: 1.5; border-radius: 4px;">{snippet_escaped}</div>
             </details>
         </div>
         """
@@ -244,18 +247,16 @@ def create_ui() -> gr.Blocks:
                     )
                     ask_btn = gr.Button("Ask", variant="primary", scale=1)
 
-                with gr.Accordion("💡 Example Inquiries", open=True):
-                    example_1 = gr.Button("📄 What is the main summary and core objective of this document?")
-                    example_2 = gr.Button("🔑 What are the key findings and main takeaways?")
-                    example_3 = gr.Button("⚙️ What methodologies, tools, or processes are discussed?")
-                    example_4 = gr.Button("📊 What important facts, data, or metrics are highlighted?")
-                    example_5 = gr.Button("🔍 What challenges, limitations, or risks are identified?")
-                    example_6 = gr.Button("📌 What recommendations or next steps are proposed?")
-
                 clear_btn = gr.Button("🧹 Clear Conversation", size="sm")
 
                 gr.Markdown("### 3. Source Citations & Evidence")
-                sources_output = gr.HTML(value="<p style='color: #888;'>Citations will appear here after asking a question.</p>")
+                sources_output = gr.HTML(
+                    value="""
+                    <div style="background-color: #0d0d0e; border: 1px solid #27272a; border-radius: 8px; padding: 16px; color: #a1a1aa; font-size: 13px;">
+                        📄 Verified source citations and matching excerpts will appear here in high-contrast dark view after asking a question.
+                    </div>
+                    """
+                )
 
         # Event Handlers
         index_btn.click(
@@ -283,23 +284,5 @@ def create_ui() -> gr.Blocks:
         )
 
         clear_btn.click(lambda: ([], "", "", ""), outputs=[chatbot, query_input, sources_output, query_info])
-
-        # Example click handlers with auto-submit
-        for btn, text in [
-            (example_1, "What is the main summary and core objective of this document?"),
-            (example_2, "What are the key findings and main takeaways?"),
-            (example_3, "What methodologies, tools, or processes are discussed in this document?"),
-            (example_4, "What important facts, data, or metrics are highlighted in this document?"),
-            (example_5, "What challenges, limitations, or risks are identified in this document?"),
-            (example_6, "What recommendations, solutions, or next steps are proposed?"),
-        ]:
-            btn.click(
-                lambda t=text: t,
-                outputs=[query_input],
-            ).then(
-                fn=answer_query,
-                inputs=[query_input, doc_dropdown, top_k_slider, threshold_slider, reranker_checkbox, chatbot],
-                outputs=[chatbot, query_input, sources_output, query_info],
-            )
 
     return demo

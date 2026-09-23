@@ -60,3 +60,4 @@ def test_multiprovider_all_failed():
 def test_factory_fallback_to_mock_when_no_keys():
     service = LLMServiceFactory.create(provider="auto", gemini_api_key="", nvidia_api_key="", openrouter_api_key="")
     assert isinstance(service, MockLLMService)
+

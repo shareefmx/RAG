@@ -58,6 +58,8 @@ def deploy(token: str, space_name: str, private: bool = False):
         ".env.*",
         "data/uploads/**",
         "data/processed/**",
+        "data/vectorstore/*.faiss",
+        "data/vectorstore/*.json",
         ".venv/**",
         "venv/**",
         "__pycache__/**",
