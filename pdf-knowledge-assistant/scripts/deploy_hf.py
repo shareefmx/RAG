@@ -56,7 +56,8 @@ def deploy(token: str, space_name: str, private: bool = False):
     ignore_patterns = [
         ".env",
         ".env.*",
-        "data/**",
+        "data/uploads/**",
+        "data/processed/**",
         ".venv/**",
         "venv/**",
         "__pycache__/**",

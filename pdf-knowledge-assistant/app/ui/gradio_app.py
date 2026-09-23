@@ -244,12 +244,12 @@ def create_ui() -> gr.Blocks:
                     )
                     ask_btn = gr.Button("Ask", variant="primary", scale=1)
 
-                with gr.Accordion("💡 Example Inquiries", open=False):
-                    example_1 = gr.Button("Who is this person and what is their background?")
-                    example_2 = gr.Button("What are their key technical skills and tools?")
-                    example_3 = gr.Button("What work experience and projects are listed?")
-                    example_4 = gr.Button("What education and certifications do they have?")
-                    example_5 = gr.Button("What is the population of Tokyo? (Test Out-of-Domain Rejection)")
+                with gr.Accordion("💡 Example Inquiries", open=True):
+                    example_1 = gr.Button("👤 Who is this person and what is their background?")
+                    example_2 = gr.Button("🛠️ What are their key technical skills and tools?")
+                    example_3 = gr.Button("💼 What work experience and projects are listed?")
+                    example_4 = gr.Button("🎓 What education and certifications do they have?")
+                    example_5 = gr.Button("🌐 What is the population of Tokyo? (Test Out-of-Domain Rejection)")
 
                 clear_btn = gr.Button("🧹 Clear Conversation", size="sm")
 
@@ -283,11 +283,21 @@ def create_ui() -> gr.Blocks:
 
         clear_btn.click(lambda: ([], "", "", ""), outputs=[chatbot, query_input, sources_output, query_info])
 
-        # Example click handlers
-        example_1.click(lambda: "Who is this person and what is their professional background?", outputs=[query_input])
-        example_2.click(lambda: "What are the primary technical skills, tools, and platforms?", outputs=[query_input])
-        example_3.click(lambda: "What work experience and projects are detailed in this document?", outputs=[query_input])
-        example_4.click(lambda: "What education, degrees, and certifications are listed?", outputs=[query_input])
-        example_5.click(lambda: "What is the population of Tokyo?", outputs=[query_input])
+        # Example click handlers with auto-submit
+        for btn, text in [
+            (example_1, "Who is this person and what is their professional background?"),
+            (example_2, "What are the primary technical skills, tools, and platforms?"),
+            (example_3, "What work experience and projects are detailed in this document?"),
+            (example_4, "What education, degrees, and certifications are listed?"),
+            (example_5, "What is the population of Tokyo?"),
+        ]:
+            btn.click(
+                lambda t=text: t,
+                outputs=[query_input],
+            ).then(
+                fn=answer_query,
+                inputs=[query_input, doc_dropdown, top_k_slider, threshold_slider, reranker_checkbox, chatbot],
+                outputs=[chatbot, query_input, sources_output, query_info],
+            )
 
     return demo

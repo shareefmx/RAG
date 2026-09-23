@@ -51,6 +51,10 @@ class RAGPipeline:
     INSUFFICIENT_CONTEXT_MESSAGE = (
         "I couldn't find enough relevant information in the uploaded documents to answer this question."
     )
+    NO_DOCUMENTS_MESSAGE = (
+        "ℹ️ No documents are currently uploaded or indexed in the system. "
+        "Please upload a PDF file using the 'Upload & Index Documents' panel on the left and click 'Index Documents' to get started."
+    )
 
     def __init__(
         self,
@@ -87,6 +91,18 @@ class RAGPipeline:
         logger.info("RAG Query received: '%s'", question)
         effective_query = question.strip()
         rewritten_query: Optional[str] = None
+
+        if hasattr(self.retriever, "vector_store") and hasattr(self.retriever.vector_store, "total_chunks"):
+            if self.retriever.vector_store.total_chunks() == 0:
+                logger.info("RAG Query aborted: vector store is empty.")
+                return RAGResponse(
+                    question=question,
+                    rewritten_question=None,
+                    answer=self.NO_DOCUMENTS_MESSAGE,
+                    sources=[],
+                    has_sufficient_context=False,
+                    retrieval_count=0,
+                )
 
         # 1. Query Rewriting (if history is present and query rewriter is configured)
         if self.query_rewriter and conversation_history:
